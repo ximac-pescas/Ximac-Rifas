@@ -131,133 +131,158 @@
 
   <p id="status-msg"></p>
 
-  <script>
-    const grid = document.getElementById('numbers-grid');
-    const numerosInput = document.getElementById('numeros');
-    const selectedNumbers = new Set();
-    const urlAPI = "https://script.google.com/macros/s/AKfycby5bIEdsl_lQy9MIeL-3N6x3wCAk-6uBg9ncs6vr8qBxA4S0JvyBrDWFZEe3pnSKiJ-/exec";
+  <!-- ...cabeçalho e estilos iguais... -->
 
-    let numerosOcupados = [];
+<script>
+  const grid = document.getElementById('numbers-grid');
+  const numerosInput = document.getElementById('numeros');
+  const selectedNumbers = new Set();
+  const urlAPI = "https://script.google.com/macros/s/AKfycby5bIEdsl_lQy9MIeL-3N6x3wCAk-6uBg9ncs6vr8qBxA4S0JvyBrDWFZEe3pnSKiJ-/exec";
 
-    function renderizarGridInicial() {
-      for (let i = 1; i <= 100; i++) {
-        const div = document.createElement('div');
-        div.className = 'number';
-        div.innerText = i;
-        div.dataset.numero = i;
+  let numerosOcupados = [];
 
-        div.addEventListener('click', () => {
-          if (div.classList.contains('disabled')) return;
+  function renderizarGridInicial() {
+    for (let i = 1; i <= 100; i++) {
+      const div = document.createElement('div');
+      div.className = 'number';
+      div.innerText = i;
+      div.dataset.numero = i;
 
-          const num = parseInt(div.dataset.numero);
-          if (selectedNumbers.has(num)) {
-            selectedNumbers.delete(num);
-            div.classList.remove('selected');
-          } else {
-            selectedNumbers.add(num);
-            div.classList.add('selected');
-          }
-          numerosInput.value = Array.from(selectedNumbers).sort((a, b) => a - b).join(', ');
-        });
+      div.addEventListener('click', () => {
+        if (div.classList.contains('disabled')) return;
 
-        grid.appendChild(div);
-      }
-    }
-
-    async function buscarNumerosReservados() {
-      try {
-        const response = await fetch(urlAPI + "?action=listar");
-        const data = await response.json();
-
-        if (Array.isArray(data.reservados)) {
-          let todos = [];
-
-          data.reservados.forEach(grupo => {
-            if (grupo != null) {
-              const texto = String(grupo);
-              const nums = texto
-                .split(',')
-                .map(n => parseInt(n.trim()))
-                .filter(n => !isNaN(n));
-              todos = todos.concat(nums);
-            }
-          });
-
-          numerosOcupados = todos;
-          marcarNumerosReservados();
-        }
-      } catch (error) {
-        console.error("Erro ao buscar números:", error);
-      }
-    }
-
-    function marcarNumerosReservados() {
-      const allNumbers = document.querySelectorAll('.number');
-      allNumbers.forEach(div => {
         const num = parseInt(div.dataset.numero);
-        div.classList.remove('disabled', 'selected'); // limpa tudo
-        if (numerosOcupados.includes(num)) {
-          div.classList.add('disabled');
-          div.title = "Número já reservado";
+        if (selectedNumbers.has(num)) {
+          selectedNumbers.delete(num);
+          div.classList.remove('selected');
+        } else {
+          selectedNumbers.add(num);
+          div.classList.add('selected');
         }
+        numerosInput.value = Array.from(selectedNumbers).sort((a, b) => a - b).join(', ');
       });
 
-      // Libera clique após carregamento
-      document.body.classList.remove('carregando');
+      grid.appendChild(div);
     }
+  }
 
-    const form = document.getElementById('rifa-form');
-    const whatsappInput = document.getElementById('whatsapp');
-    IMask(whatsappInput, {
-      mask: '(00) 00000-0000'
-    });
+  async function buscarNumerosReservados() {
+    try {
+      const response = await fetch(urlAPI + "?action=listar");
+      const data = await response.json();
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+      if (Array.isArray(data.reservados)) {
+        let todos = [];
 
-      const nome = form.nome.value.trim();
-      const whatsapp = form.whatsapp.value.trim();
-      const numeros = numerosInput.value.trim();
-      const botao = form.querySelector("button");
-
-      if (!nome || !numeros) {
-        alert("Preencha seu nome e selecione ao menos 1 número.");
-        return;
-      }
-
-      botao.disabled = true;
-      botao.innerText = "Enviando...";
-
-      try {
-        const response = await fetch(urlAPI, {
-          method: "POST",
-          body: new URLSearchParams({ nome, whatsapp, numeros })
+        data.reservados.forEach(grupo => {
+          if (grupo != null) {
+            const texto = String(grupo);
+            const nums = texto
+              .split(',')
+              .map(n => parseInt(n.trim()))
+              .filter(n => !isNaN(n));
+            todos = todos.concat(nums);
+          }
         });
 
-        if (response.ok) {
-          // Redireciona passando os números para a página obrigado.html
-          window.location.href = "obrigado.html?numeros=" + encodeURIComponent(numeros);
-        } else {
-          alert("Erro ao enviar. Tente novamente.");
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Erro de conexão com o servidor.");
-      } finally {
-        botao.disabled = false;
-        botao.innerText = "Reservar Números";
+        numerosOcupados = todos;
+        marcarNumerosReservados();
+      }
+    } catch (error) {
+      console.error("Erro ao buscar números:", error);
+    }
+  }
+
+  function marcarNumerosReservados() {
+    const allNumbers = document.querySelectorAll('.number');
+    allNumbers.forEach(div => {
+      const num = parseInt(div.dataset.numero);
+      div.classList.remove('disabled', 'selected'); // limpa tudo
+      if (numerosOcupados.includes(num)) {
+        div.classList.add('disabled');
+        div.title = "Número já reservado";
+        selectedNumbers.delete(num);
       }
     });
 
-    // BOTÃO DE ATUALIZAR NÚMEROS
-    document.getElementById('btn-atualizar').addEventListener('click', async () => {
+    // Atualiza campo de texto com os que sobraram
+    numerosInput.value = Array.from(selectedNumbers).sort((a, b) => a - b).join(', ');
+    document.body.classList.remove('carregando');
+  }
+
+  const form = document.getElementById('rifa-form');
+  const whatsappInput = document.getElementById('whatsapp');
+  IMask(whatsappInput, {
+    mask: '(00) 00000-0000'
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const nome = form.nome.value.trim();
+    const whatsapp = form.whatsapp.value.trim();
+    const numeros = numerosInput.value.trim();
+    const botao = form.querySelector("button");
+
+    if (!nome || !numeros) {
+      alert("Preencha seu nome e selecione ao menos 1 número.");
+      return;
+    }
+
+    if (!/\(\d{2}\) \d{5}-\d{4}/.test(whatsapp)) {
+      alert("Por favor, informe um WhatsApp válido.");
+      return;
+    }
+
+    botao.disabled = true;
+    botao.innerText = "Verificando...";
+
+    await buscarNumerosReservados(); // atualiza a lista antes de enviar
+
+    const selecionados = Array.from(selectedNumbers);
+    const conflito = selecionados.filter(n => numerosOcupados.includes(n));
+
+    if (conflito.length > 0) {
+      alert("⚠️ Ops! Os números " + conflito.join(', ') + " foram reservados por outra pessoa.\nSelecione novos números.");
       selectedNumbers.clear();
       numerosInput.value = "";
-      await buscarNumerosReservados();
-    });
+      marcarNumerosReservados();
+      botao.disabled = false;
+      botao.innerText = "Reservar Números";
+      return;
+    }
 
-    renderizarGridInicial();
-    buscarNumerosReservados();
-  </script>
+    botao.innerText = "Enviando...";
+
+    try {
+      const response = await fetch(urlAPI, {
+        method: "POST",
+        body: new URLSearchParams({ nome, whatsapp, numeros })
+      });
+
+      if (response.ok) {
+        window.location.href = "obrigado.html?numeros=" + encodeURIComponent(numeros);
+      } else {
+        alert("Erro ao enviar. Tente novamente.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro de conexão com o servidor.");
+    } finally {
+      botao.disabled = false;
+      botao.innerText = "Reservar Números";
+    }
+  });
+
+  document.getElementById('btn-atualizar').addEventListener('click', async () => {
+    selectedNumbers.clear();
+    numerosInput.value = "";
+    await buscarNumerosReservados();
+  });
+
+  renderizarGridInicial();
+  buscarNumerosReservados();
+</script>
+
 </body>
 </html>
