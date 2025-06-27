@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Obrigado pela sua reserva!</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f9f9f9;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1 {
+      color: #136f63;
+      font-size: 1.8em;
+    }
+
+    .logo {
+      max-width: 160px;
+      margin-bottom: 20px;
+    }
+
+    .mensagem {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: 0 auto 20px;
+    }
+
+    .mensagem p {
+      font-size: 1em;
+      line-height: 1.5;
+    }
+
+    .pix-box {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #e6f9ec; /* verde claro */
+      border-left: 6px solid #28a745; /* verde escuro */
+      border-radius: 6px;
+    }
+
+    .pix-copy {
+      font-weight: bold;
+      font-size: 1.2em;
+      margin: 10px 0;
+    }
+
+    .copiar-btn {
+      background-color: #136f63;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+      margin-top: 10px;
+    }
+
+    .numeros-grade {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .numeros-grade .bolha {
+      background-color: #28a745;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 50%;
+      font-weight: bold;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .grupo-whatsapp {
+      display: inline-block;
+      margin-top: 20px;
+      background-color: #25d366;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .grupo-whatsapp:hover {
+      background-color: #1ebe5d;
+    }
+
+    @media (max-width: 480px) {
+      .pix-copy {
+        font-size: 1em;
+      }
+      .copiar-btn {
+        font-size: 0.9em;
+        padding: 8px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <img src="https://ximac.com.br/images/logo.png" alt="Logo Ximac Pesca" class="logo" />
+
+  <div class="mensagem">
+    <h1>🎉 Obrigado pela sua reserva!</h1>
+    <p><strong>Seus números foram reservados com sucesso.</strong></p>
+
+    <div>
+      <p><strong>Números reservados:</strong></p>
+      <div id="numeros-reservados" class="numeros-grade">Carregando...</div>
+    </div>
+
+    <div class="pix-box">
+      <p>🔴 <strong>DINÂMICA DE PAGAMENTO</strong> 🔴</p>
+      <p>Após a tabela ser 100% preenchida e os números reservados por todos os participantes, <strong>você terá apenas 1 hora</strong> para realizar o pagamento via PIX.</p>
+      <p>⏰ Então, não perca tempo! Assim que reservar seus números, <strong>já faça o pagamento</strong> e envie o comprovante.</p>
+      <p>❗ Após esse período, os <strong>números não pagos</strong> estarão novamente disponíveis para outros participantes.</p>
+      <p>⚠️ <strong>Atenção:</strong> não se esqueça de <strong>enviar o comprovante</strong>. Se não conseguirmos confirmar o pagamento, entenderemos que ele <em>não foi realizado</em> e o número será liberado.</p>
+
+      <p class="pix-copy" id="chave-pix">Chave PIX CPF: <br><strong>585.716.981-04</strong> <br>Wilson Divino De Oliveira</p>
+      <button class="copiar-btn" onclick="copiarPix()">📋 Copiar Chave PIX</button>
+    </div>
+
+    <a class="grupo-whatsapp" href="https://wa.me/556232909783" target="_blank">📎 Enviar comprovante via WhatsApp</a>
+  </div>
+
+  <script>
+    function getParametroURL(nome) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(nome);
+    }
+
+    window.onload = () => {
+      const numeros = getParametroURL('numeros');
+      const container = document.getElementById('numeros-reservados');
+
+      if (numeros) {
+        const lista = numeros.split(',').map(n => n.trim()).filter(n => n);
+        container.innerHTML = '';
+        lista.forEach(numero => {
+          const span = document.createElement('span');
+          span.className = 'bolha';
+          span.textContent = numero;
+          container.appendChild(span);
+        });
+      } else {
+        container.textContent = "Não informado";
+      }
+    }
+
+    function copiarPix() {
+      const texto = "58571698104";
+      navigator.clipboard.writeText(texto).then(() => {
+        alert("Chave PIX copiada com sucesso!");
+      }).catch(err => {
+        alert("Erro ao copiar chave PIX");
+      });
+    }
+  </script>
+</body>
+</html>
