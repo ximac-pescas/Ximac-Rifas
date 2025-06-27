@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rifa Ximac Pesca</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #136f63;
+      font-size: 1.8em;
+    }
+    #btn-atualizar {
+      margin-top: 10px;
+      background-color: #ddd;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1em;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #btn-atualizar:hover {
+      background-color: #ccc;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+      gap: 8px;
+      max-width: 100%;
+      margin: 20px auto;
+      padding: 10px;
+    }
+    .number {
+      padding: 12px 0;
+      background-color: #ffffff;
+      border: 2px solid #136f63;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1em;
+      user-select: none;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .number.selected {
+      background-color: #ffcc00;
+      color: #000;
+    }
+    .number.disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+      color: #666;
+    }
+    body.carregando .number {
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    form {
+      margin-top: 20px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    input, textarea {
+      padding: 12px;
+      margin: 8px 0;
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+      resize: none;
+    }
+    textarea { height: 80px; }
+    button {
+      padding: 12px;
+      background-color: #136f63;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1em;
+      width: 100%;
+      margin-top: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+    #status-msg {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    img.logo {
+      max-width: 180px;
+      height: auto;
+      margin: 10px auto 20px;
+      display: block;
+    }
+    @media (max-width: 480px) {
+      h1 { font-size: 1.5em; }
+      .number {
+        padding: 10px 0;
+        font-size: 0.9em;
+      }
+    }
+  </style>
+  <script src="https://unpkg.com/imask"></script>
+</head>
+<body class="carregando">
+  <img src="https://ximac.com.br/images/logo.png" alt="Logo Ximac Pesca" class="logo" />
+  <h1>Rifa Ximac Pesca 🎣</h1>
+  <button id="btn-atualizar">🔄 Atualizar Números</button>
+
+  <p>Escolha seus números da sorte (sem limite)</p>
+  <div class="grid" id="numbers-grid"></div>
+
+  <form id="rifa-form">
+    <input type="text" name="nome" placeholder="Seu nome" required />
+    <input type="tel" name="whatsapp" id="whatsapp" placeholder="WhatsApp" required />
+    <textarea name="numeros" id="numeros" placeholder="Números escolhidos" readonly required></textarea>
+    <button type="submit">Reservar Números</button>
+  </form>
+
+  <p id="status-msg"></p>
+
+  <script>
+    const grid = document.getElementById('numbers-grid');
+    const numerosInput = document.getElementById('numeros');
+    const selectedNumbers = new Set();
+    const urlAPI = "https://script.google.com/macros/s/AKfycby5bIEdsl_lQy9MIeL-3N6x3wCAk-6uBg9ncs6vr8qBxA4S0JvyBrDWFZEe3pnSKiJ-/exec";
+
+    let numerosOcupados = [];
+
+    function renderizarGridInicial() {
+      for (let i = 1; i <= 100; i++) {
+        const div = document.createElement('div');
+        div.className = 'number';
+        div.innerText = i;
+        div.dataset.numero = i;
+
+        div.addEventListener('click', () => {
+          if (div.classList.contains('disabled')) return;
+
+          const num = parseInt(div.dataset.numero);
+          if (selectedNumbers.has(num)) {
+            selectedNumbers.delete(num);
+            div.classList.remove('selected');
+          } else {
+            selectedNumbers.add(num);
+            div.classList.add('selected');
+          }
+          numerosInput.value = Array.from(selectedNumbers).sort((a, b) => a - b).join(', ');
+        });
+
+        grid.appendChild(div);
+      }
+    }
+
+    async function buscarNumerosReservados() {
+      try {
+        const response = await fetch(urlAPI + "?action=listar");
+        const data = await response.json();
+
+        if (Array.isArray(data.reservados)) {
+          let todos = [];
+
+          data.reservados.forEach(grupo => {
+            if (grupo != null) {
+              const texto = String(grupo);
+              const nums = texto
+                .split(',')
+                .map(n => parseInt(n.trim()))
+                .filter(n => !isNaN(n));
+              todos = todos.concat(nums);
+            }
+          });
+
+          numerosOcupados = todos;
+          marcarNumerosReservados();
+        }
+      } catch (error) {
+        console.error("Erro ao buscar números:", error);
+      }
+    }
+
+    function marcarNumerosReservados() {
+      const allNumbers = document.querySelectorAll('.number');
+      allNumbers.forEach(div => {
+        const num = parseInt(div.dataset.numero);
+        div.classList.remove('disabled', 'selected'); // limpa tudo
+        if (numerosOcupados.includes(num)) {
+          div.classList.add('disabled');
+          div.title = "Número já reservado";
+        }
+      });
+
+      // Libera clique após carregamento
+      document.body.classList.remove('carregando');
+    }
+
+    const form = document.getElementById('rifa-form');
+    const whatsappInput = document.getElementById('whatsapp');
+    IMask(whatsappInput, {
+      mask: '(00) 00000-0000'
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const nome = form.nome.value.trim();
+      const whatsapp = form.whatsapp.value.trim();
+      const numeros = numerosInput.value.trim();
+      const botao = form.querySelector("button");
+
+      if (!nome || !numeros) {
+        alert("Preencha seu nome e selecione ao menos 1 número.");
+        return;
+      }
+
+      botao.disabled = true;
+      botao.innerText = "Enviando...";
+
+      try {
+        const response = await fetch(urlAPI, {
+          method: "POST",
+          body: new URLSearchParams({ nome, whatsapp, numeros })
+        });
+
+        if (response.ok) {
+          // Redireciona passando os números para a página obrigado.html
+          window.location.href = "obrigado.html?numeros=" + encodeURIComponent(numeros);
+        } else {
+          alert("Erro ao enviar. Tente novamente.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Erro de conexão com o servidor.");
+      } finally {
+        botao.disabled = false;
+        botao.innerText = "Reservar Números";
+      }
+    });
+
+    // BOTÃO DE ATUALIZAR NÚMEROS
+    document.getElementById('btn-atualizar').addEventListener('click', async () => {
+      selectedNumbers.clear();
+      numerosInput.value = "";
+      await buscarNumerosReservados();
+    });
+
+    renderizarGridInicial();
+    buscarNumerosReservados();
+  </script>
+</body>
+</html>
